@@ -5,7 +5,7 @@ require Exporter;
 use Smart::Comments '###';
 
 use vars qw{$VERSION @ISA @EXPORT_OK %EXPORT_TAGS};
-$VERSION = sprintf "%d.%02d", q$Revision: 1.1.1.1 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.3 $ =~ /(\d+)/g;
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(create_thumbnail);
@@ -17,10 +17,6 @@ $VERSION = sprintf "%d.%02d", q$Revision: 1.1.1.1 $ =~ /(\d+)/g;
 
 my $DEBUG = 0;
 sub DEBUG : lvalue { $DEBUG }
-
-
-
-
 
 
 sub create_thumbnail {
@@ -147,7 +143,7 @@ __END__
 
 =head1 NAME
 
-
+Image::Magick::Thumbnail::PDF - make thumbnail of a page in a pdf document
 
 =head1 SYNOPSIS
 
