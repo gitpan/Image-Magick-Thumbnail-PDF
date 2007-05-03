@@ -9,6 +9,12 @@ use File::Copy;
 
 
 
+### seek convert
+
+my $convert_bin = `which convert`; chomp $convert_bin;
+
+ok($convert_bin!~/no convert in/ , 'convert bin found');
+
 
 
 Image::Magick::Thumbnail::PDF::DEBUG = 1;

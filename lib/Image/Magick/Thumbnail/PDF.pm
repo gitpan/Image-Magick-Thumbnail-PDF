@@ -5,7 +5,7 @@ require Exporter;
 use Smart::Comments '###';
 
 use vars qw{$VERSION @ISA @EXPORT_OK %EXPORT_TAGS};
-$VERSION = sprintf "%d.%02d", q$Revision: 1.4 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.5 $ =~ /(\d+)/g;
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(create_thumbnail);
@@ -92,9 +92,13 @@ sub create_thumbnail {
 		### $arg
 	}
 
-	
 
-	my @command = ('convert','-colorspace','rgb');
+	my $convert_bin = `which convert`;
+	chomp $convert_bin;
+	$convert_bin!~/no convert in/ or die(__PACKAGE__."::create_thumbnail() missing convert when doing 'which convert', "
+		."is imagemagick installed on this system?");
+
+	my @command = ($convert_bin,'-colorspace','rgb');
 	
 	if (!$all){
 		push @command , $abs_pdf."[$page_number]";
