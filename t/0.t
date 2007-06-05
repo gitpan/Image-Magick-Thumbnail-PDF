@@ -38,9 +38,9 @@ ok( $out eq cwd().'/t/test0/file1-001.png','create_thumbnail() returns as expect
 
 ### variations
 
-ok( $out = create_thumbnail($abs_pdf,2),'create_thumbnail() 1');
+ok( $out = create_thumbnail($abs_pdf, cwd().'/t/test0/filepage2.png',  2),'create_thumbnail() named outfile');
 ### $out
-ok( $out eq  cwd().'/t/test0/file1-002.png','create_thumbnail() returns as expected 1');
+ok( $out eq  cwd().'/t/test0/filepage2.png','create_thumbnail() returns as expected 1');
 
 
 

@@ -6,7 +6,7 @@ use Smart::Comments '###';
 use File::Which;
 
 use vars qw{$VERSION @ISA @EXPORT_OK %EXPORT_TAGS};
-$VERSION = sprintf "%d.%02d", q$Revision: 1.7 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.8 $ =~ /(\d+)/g;
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(create_thumbnail);
@@ -26,6 +26,7 @@ sub create_thumbnail {
 	$abs_pdf = shift; $abs_pdf or croak(__PACKAGE__."::create_thumbnail() missing abs pdf argument");
 	
 
+	my $name_of_outfile_in_arguments=0;
 	
 	for (@_){
 		my $val = $_;
@@ -40,9 +41,10 @@ sub create_thumbnail {
 		elsif ($val eq 'all_pages'){
 			$all=1; print STDERR " got flag to do all pages\n" if DEBUG;
 		}
-	#	elsif ($val=~/[^\/]+\.\w{2,4}$/){
-	#		$abs_out = $val; print STDERR " got abs out [$val]\n" if DEBUG;
-	#	}
+		elsif ($val=~/[^\/]+\.\w{2,4}$/){
+			$abs_out = $val; print STDERR " got abs out [$val]\n" if DEBUG;
+			$name_of_outfile_in_arguments=1;
+		}
 		else { croak(__PACKAGE__."::create_thumbnail() bogus argument [$val]"); }	
 	}
 
@@ -58,13 +60,9 @@ sub create_thumbnail {
 	}
 	
 	$all ||= 0;
-	$page_number ||= 1;	
-
-	
-	my $name_of_outfile_in_arguments=1;
-	unless( defined $abs_out){
-		$name_of_outfile_in_arguments=0;
+	$page_number ||= 1;
 		
+	unless( $name_of_outfile_in_arguments ){		
 		$abs_out = $abs_pdf; 
 		$abs_out=~s/\.\w{3,5}$/\.png/;
 	}
@@ -117,10 +115,12 @@ sub create_thumbnail {
 
 
 	sub _dopage {
-			my ($image,$abs_out,$pagenum,$arg) = @_;
+			my ($image,$abs_out,$pagenum,$arg,$name_of_outfile_in_arguments) = @_;
 			$pagenum = sprintf "%03d", $pagenum;
-				
-			$abs_out=~s/(\.\w{3,5})$/-$pagenum$1/;
+			
+			unless( $name_of_outfile_in_arguments ){
+				$abs_out=~s/(\.\w{3,5})$/-$pagenum$1/;
+			}	
 			
 		
 
@@ -229,6 +229,13 @@ To create a thumb for page 6 with restriction 200, a frame of 2 px, and no norma
 	create_thumbnail('/abs/file.pdf',6,
 		{ restriction => 200, frame => 2, normalize => 0 
 	}); # creates '/abs/file-006.png' 
+
+To save a thumbnial of page 3 named differently, in another palce
+
+	create_thumbnail('/abs/file.pdf','/abs/another/page3.png',3,
+		{ restriction => 200, frame => 2, normalize => 0 
+	}); # creates '/abs/file-006.png' 
+
 
 
 =head2 Making All Thumbnails
