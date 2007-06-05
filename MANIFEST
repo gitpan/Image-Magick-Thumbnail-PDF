@@ -1,6 +1,9 @@
 lib/Image/Magick/Thumbnail/PDF.pm
 t/0.t
-t/linux_quickref.pdf
+t/1all.t
+t/2.t
+t/file1.pdf
+t/ap.pdf
 MANIFEST
 Makefile.PL
 

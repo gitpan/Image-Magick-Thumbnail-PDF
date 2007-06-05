@@ -5,6 +5,8 @@ WriteMakefile(
 	PREREQ_PM => {
 		'Smart::Comments' => 0,
 		'File::Path' => 0,
-		'File::Copy' => 0,		
+		'File::Copy' => 0,	
+		'Image::Magick' => 0,
+		'Image::Magick::Thumbnail' => 0,
 	},
 );

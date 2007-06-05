@@ -3,9 +3,10 @@ use strict;
 use Carp;
 require Exporter;
 use Smart::Comments '###';
+use File::Which;
 
 use vars qw{$VERSION @ISA @EXPORT_OK %EXPORT_TAGS};
-$VERSION = sprintf "%d.%02d", q$Revision: 1.5 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.7 $ =~ /(\d+)/g;
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(create_thumbnail);
@@ -14,44 +15,35 @@ $VERSION = sprintf "%d.%02d", q$Revision: 1.5 $ =~ /(\d+)/g;
 );
 
 
-
-my $DEBUG = 0;
-sub DEBUG : lvalue { $DEBUG }
-
+$Image::Magick::Thumbnail::PDF::DEBUG = 0;
+sub DEBUG : lvalue { $Image::Magick::Thumbnail::PDF::DEBUG }
 
 sub create_thumbnail {
-	my ($abs_pdf,$abs_out,$page_number,$arg,$all);
-	$abs_pdf = shift; 
 
-	print STDERR "============== create_thumbnail() ==\n" if DEBUG;
-	$abs_pdf or croak(__PACKAGE__."::create_thumbnail() missing abs pdf argument");
+	# BEGIN GET PARAMS
+	
+	my ($abs_pdf,$abs_out,$page_number,$arg,$all);
+	$abs_pdf = shift; $abs_pdf or croak(__PACKAGE__."::create_thumbnail() missing abs pdf argument");
+	
+
 	
 	for (@_){
 		my $val = $_;
 		print " val [$val]\n" if DEBUG;
 
 		if (ref $val eq 'HASH'){
-			$arg = $val;
-			print STDERR " got args hash ref\n" if DEBUG;
+			$arg = $val; print STDERR " got args hash ref\n" if DEBUG;
 		}
-
 		elsif ($val=~/^\d+$/){
-			$page_number = $val;
-			print STDERR " got page number $val\n" if DEBUG;
-		}
-		
+			$page_number = $val; print STDERR " got page number $val\n" if DEBUG;			
+		}		
 		elsif ($val eq 'all_pages'){
-			$all=1;
-			print STDERR " got flag to do all pages\n" if DEBUG;
+			$all=1; print STDERR " got flag to do all pages\n" if DEBUG;
 		}
-
-		elsif ($val=~/[^\/]+\.\w{2,4}$/){
-			$abs_out = $val;
-			print STDERR " got abs out [$val]\n" if DEBUG;
-		}
-		else {
-			croak(__PACKAGE__."::create_thumbnail() bogus argument [$val]");
-		}	
+	#	elsif ($val=~/[^\/]+\.\w{2,4}$/){
+	#		$abs_out = $val; print STDERR " got abs out [$val]\n" if DEBUG;
+	#	}
+		else { croak(__PACKAGE__."::create_thumbnail() bogus argument [$val]"); }	
 	}
 
 	$arg ||={};
@@ -59,25 +51,22 @@ sub create_thumbnail {
 	unless( defined $arg->{frame} ){ $arg->{frame} = 6; }
 	unless( defined $arg->{normalize}){ $arg->{normalize} = 1; }
 
+
+	# if we are putting a border, we still want the restriction asked for to be obeyed
 	if ($arg->{frame}){
 		$arg->{restriction} = ($arg->{restriction} - ($arg->{frame}  * 2) );
 	}
 	
 	$all ||= 0;
-	$page_number ||= 0;	
+	$page_number ||= 1;	
 
-	$abs_out ||= $abs_pdf;
-	if( $abs_out eq $abs_pdf ){
-		if (!$all){
-			$abs_out=~s/\.\w{3}$/\-$page_number\.png/
-				or carp(__PACKAGE__."Is this a pdf? Cannot match file extension (3 \\w) ")
-				and return;
-		}
-		else {
-			$abs_out=~s/\.\w{3}$/\.png/
-				or carp(__PACKAGE__."Is this a pdf? Cannot match file extension (3 \\w) ")
-				and return;
-		}
+	
+	my $name_of_outfile_in_arguments=1;
+	unless( defined $abs_out){
+		$name_of_outfile_in_arguments=0;
+		
+		$abs_out = $abs_pdf; 
+		$abs_out=~s/\.\w{3,5}$/\.png/;
 	}
 
 	$arg->{frame}=~/^\d+$/ or croak(__PACKAGE__."::create_thumbnail() argument 'frame' is not a number");
@@ -85,62 +74,80 @@ sub create_thumbnail {
 	$arg->{restriction}=~/^\d+$/ or 
 		croak(__PACKAGE__."::create_thumbnail() argument 'restriction' is invalid");
 
-		
 	if (DEBUG){ 
 		printf STDERR __PACKAGE__."::create_thumbnail() debug.. \n";
 		printf STDERR " abs_pdf %s\n page_number %s\n abs_out %s, all? %s\n", $abs_pdf, $page_number, $abs_out, $all;
 		### $arg
 	}
 
+	# END GET PARAMS
 
-	my $convert_bin = `which convert`;
-	chomp $convert_bin;
-	$convert_bin!~/no convert in/ or die(__PACKAGE__."::create_thumbnail() missing convert when doing 'which convert', "
-		."is imagemagick installed on this system?");
 
-	my @command = ($convert_bin,'-colorspace','rgb');
+
+
+
+
+
+
+	require Image::Magick::Thumbnail;
+
+	my $src = new Image::Magick;
+	my $err = $src->Read($abs_pdf);#	warn("92 ++++ $err") if $err;
+	print STDERR "ok read $abs_pdf\n" if DEBUG;
 	
-	if (!$all){
-		push @command , $abs_pdf."[$page_number]";
+	
+	if (!$all){			
+			my $image = $src->[($page_number-1)];
+			defined $image or warn("file [$abs_pdf] page number [$page_number] does not exist?") and return;
+			my $out = _dopage($image,$abs_out,$page_number,$arg,$name_of_outfile_in_arguments);		
+			return $out;
+		}
+	else {
+			print STDERR "Do all pages\n" if DEBUG;
+			my $pagenum = 1;
+			my @outs;
+			for ( @$src ){			
+				my $out = _dopage($_,$abs_out,$pagenum,$arg);			
+				push @outs, $out;
+				$pagenum++;
+			}
+			return \@outs;
 	}
-	else {	
-		push @command , $abs_pdf;
-	}	
-	
-	push @command, '-antialias','-label','%f';
 
 
-	if ( $arg->{normalize} ){
-		my $step = $arg->{restriction} * 2;	
-		push @command, '-thumbnail',  $step.'x'.$step, '-normalize';
+
+	sub _dopage {
+			my ($image,$abs_out,$pagenum,$arg) = @_;
+			$pagenum = sprintf "%03d", $pagenum;
+				
+			$abs_out=~s/(\.\w{3,5})$/-$pagenum$1/;
+			
+		
+
+
+			if ( $arg->{normalize} ){
+				my $step = $arg->{restriction} * 2;	
+				my ($i,$x,$y) = Image::Magick::Thumbnail::create($image,$step);
+				$i->Normalize;
+				$image = $i;
+				print STDERR "Normalized\n" if DEBUG;
+			}
+
+			
+			my($thumb,$x,$y) = Image::Magick::Thumbnail::create($image,$arg->{restriction});
+
+
+
+			if ($arg->{frame}){
+				$image->Frame($arg->{frame}.'x'.$arg->{frame});
+				print STDERR "framing $$arg{frame}\n" if DEBUG;
+			}
+
+			my $err= $thumb->Write($abs_out); #warn("141 +++ $err") if $err;
+			return $abs_out;		
 	}
-
-
-	push @command, '-thumbnail', $arg->{restriction}.'x'.$arg->{restriction};
-	
-	if ($arg->{frame}){
-		push @command, '-frame', $arg->{frame}.'x'.$arg->{frame};
-	}
-	
-	push @command, '-quality', '90', $abs_out;
-
-	unless( system(@command) == 0 ){
-		carp(__PACKAGE__." system [@command] failed: $?");
-		return;	
-	}
-	
-	return $abs_out;
-# convert  ./rec.pdf[0] -label %f -thumbnail 400x400 -normalize -thumbnail 125x125 -frame 6x6 ./rec.gif
 
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -181,11 +188,12 @@ No subroutines are exported by default.
 argument is absolute path to pdf file
 
 Will not check if the thumbnail exists already ot not.
-
 The first argument must be the abs path to the pdf file.
 
 optional argument is destination, default is same as abs_pdf but a .png extension instead.
-second optional argument is a hash ref with following options
+The name of the file(s) saved will be argument (pdf) as png
+
+optional argument is a hash ref with following options
 	restriction frame normalize
 
 returns abs path to thumbnail file created.
@@ -204,56 +212,50 @@ for making sense to the user. default is 6.
 The first optional argument can be an absolute path to a filename (which will be your thumbnail).
 By default this will make a simple thumbnail of the first page (page 0).
 
+If you ask to make a thumbnail of all pages, it returns an array ref of the absolute paths to the files created.
+
 =head2 Examples
 
-The following example creates /abs/file-0.png 125x125 thumbnail image of first page.
+The following example creates /abs/file-000.png 125x125 thumbnail image of first page.
 
 	create_thumbnail('/abs/file.pdf');
 
-This example creates a thumbnail to /abs/path/to/thumbs/haha.gif instead:
-
-	create_thumbnail('/abs/file.pdf','/abs/path/to/thumbs/haha.gif');
-
 To create a thumb for page 5 instead:
 	
-	create_thumbnail('/abs/file.pdf', '/abs/path/to/thumbs/haha_page_five.gif',5);
-
-	create_thumbnail('/abs/file.pdf',5); # creates '/abs/file-5.png'
+	create_thumbnail('/abs/file.pdf',5); # creates '/abs/file-005.png'
 
 To create a thumb for page 6 with restriction 200, a frame of 2 px, and no normalize:
 
 	create_thumbnail('/abs/file.pdf',6,
 		{ restriction => 200, frame => 2, normalize => 0 
-	}); # creates '/abs/file-6.png' 
+	}); # creates '/abs/file-006.png' 
 
-	create_thumbnail('/abs/file.pdf','/abs/file_pagesix.png', 6,
-		{ restriction => 200, frame => 2, normalize => 0 
-	}); # creates '/abs/file_pagesix.png'
-
-	create_thumbnail('/abs/file.pdf','/abs/file_i_lie_page234.png', 6,
-		{ restriction => 200, frame => 2, normalize => 0 }
-	); # creates '/abs/file_i_lie_page234.png' (thumbnail of page 6)
-
-To create a thumb for page 19 in a different location with dimensions of 100x100
-
-	create_thumbnail('/abs/file.pdf', '/abs/path/to/this19.jpg', 19, { rescrtiction => 100 });
 
 =head2 Making All Thumbnails
 
 This can be slow! This can be useful offline, but I don't suggest it real-time. You try it out.
 
+The following examples makes  '/abs/f-001.png',  '/abs/f-002.png',  '/abs/f-003.png', etc.
 
-The following examples makes  '/abs/f-0.gif',  '/abs/f-1.gif',  '/abs/f-2.gif', etc.
+	my $all = create_thumbnail('/abs/file.pdf','all_pages');
 
-	create_thumbnail('/abs/file.pdf', '/abs/f.gif','all_pages');
+The returned value is an array ref holding ['/abs/file-001.png',  '/abs/file-002.png',  '/abs/file-003.png'].
 
-The following example makes '/abs/file-0.png', '/abs/file-1.png', '/abs/file-2.png' etc
+=head3 PAGE NUMBERS
 
-	create_thumbnail('/abs/file.pdf','all_pages');
+The first page is page #1
+If you ask for page 0, croaks.
+
+=head3 GIF
+
+TODO: spit out all thumbs of all pages into one gif.
+NOT IMPLEMENTED presently.
 
 The following example makes '/abs/file.gif', which is an animated gif with heach frame being a page in the document.
 
 	create_thumbnail('/abs/file.pdf','all_pages','/abs/file.gif');
+
+
 
 
 =head3 Please Note
@@ -268,26 +270,25 @@ By default normalize is used to accentuate lines. This creates an extra step in 
 down about halfway between the target size and the original size, the filter is applied, and then resized down
 again. So- if you do or do not use normalize (on by default) you will see a large change in time taken.
 
+=head2 Return Value
+
+If you tell create_thumbnail() what page you want, it returns a string
+If you do not tell it, it assumes you want all pages, and it will return an array ref instead
+in all cases, the returned are absolute paths to the thubmnail created
+
 =head1 DEBUGGING
 
 Note that if you enable debugger 
 
-	Image::Magick::Thumbnail::PDF::DEBUG = 1;
+	$Image::Magick::Thumbnail::PDF::DEBUG = 1;
 
 You will see that a restriction of 125 changes to 113.. how come? Because we compensate for the frame size.
 Asking for a thumbnail no wider or taller then 125 px gives you just that. 
 
-=head1 TODO
-
-There is one thing I want to catch up with. If you make all thumbnails, all pages.. then I would like to return
-an array ref with all thumbs created. But.. I don't know what they are! Hmm.
-It would entail asking the pdf how many pages it has ahead of time, I'm scared about the consumption of resources
-that would entail, if it's worth it.
-I could enable that only if they specified all pages to be done.
-
 =head1 PREREQUISITES
 
-ImageMagick with convert installed.
+Image::Magick 
+Image::Magick::Thumbnail
 Smart::Comments
 Carp
 
