@@ -8,5 +8,6 @@ WriteMakefile(
 		'File::Copy' => 0,	
 		'Image::Magick' => 0,
 		'Image::Magick::Thumbnail' => 0,
+		'File::Which' => 0,
 	},
 );

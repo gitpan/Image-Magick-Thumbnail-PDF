@@ -2,11 +2,11 @@ package Image::Magick::Thumbnail::PDF;
 use strict;
 use Carp;
 require Exporter;
-use Smart::Comments '###';
+#use Smart::Comments '###';
 use File::Which;
 
 use vars qw{$VERSION @ISA @EXPORT_OK %EXPORT_TAGS};
-$VERSION = sprintf "%d.%02d", q$Revision: 1.8 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.9 $ =~ /(\d+)/g;
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(create_thumbnail);
@@ -297,11 +297,13 @@ Asking for a thumbnail no wider or taller then 125 px gives you just that.
 Image::Magick 
 Image::Magick::Thumbnail
 Smart::Comments
+File::Which
 Carp
 
 =head1 SEE ALSO
 
 ImageMagick on the web, convert.
+L<Image::Magick::Thumbnail>
 
 =head1 AUTHOR
 
