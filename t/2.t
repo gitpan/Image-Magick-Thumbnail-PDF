@@ -19,8 +19,8 @@ Image::Magick::Thumbnail::PDF::DEBUG = 1;
 
 my @pdfs;
 
-for (qw(test1 test2 test3)){
-
+for (qw(test1 test2 test3 test4)){
+	File::Path::rmtree(cwd()."/t/$_");
 	mkdir cwd()."/t/$_";
 	File::Copy::cp(cwd().'/t/ap.pdf', cwd()."/t/$_/ap.pdf");
 	push @pdfs,  cwd()."/t/$_/ap.pdf";
@@ -48,6 +48,17 @@ my $out2 = create_thumbnail($pdfs[2],'all_pages',{ restriction => 125, frame=>4,
 for(@$out2){
 	ok(-f $_, "out $_ exists");
 }
+
+
+
+create_thumbnail($pdfs[3]);
+ok( -f cwd.'/t/test4/ap-001.png','default');
+
+create_thumbnail($pdfs[3],{ quality => 30 }, cwd.'/t/test4/ap_30.png');
+ok( -f cwd.'/t/test4/ap_30.png','name specified' );
+
+create_thumbnail($pdfs[3],{ quality => 30 }, 2, cwd.'/t/test4/ap_page2.jpg');
+ok( -f cwd.'/t/test4/ap_page2.jpg','name specified 2' );
 
 
 
