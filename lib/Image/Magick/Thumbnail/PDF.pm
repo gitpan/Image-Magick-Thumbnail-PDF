@@ -5,7 +5,7 @@ require Exporter;
 use File::Which;
 
 use vars qw{$VERSION @ISA @EXPORT_OK %EXPORT_TAGS};
-$VERSION = sprintf "%d.%02d", q$Revision: 1.10 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.11 $ =~ /(\d+)/g;
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(create_thumbnail);
@@ -400,6 +400,10 @@ Asking for a thumbnail no wider or taller then 125 px gives you just that.
 The arguments can be provided in any order. I read somewhere that good code is liberal in what it
 receives as input and conservative in its output- kind of what 'people' should be like.
 
+=head1 CAVEATS
+
+There are three ghostscripts out there, ESP Ghostscript, AFPL Ghostscript, and GNU Ghostscript.
+
 =head1 PREREQUISITES
 
 Image::Magick 
@@ -407,6 +411,7 @@ Image::Magick::Thumbnail
 Smart::Comments
 File::Which
 Carp
+ESP Ghostscript, NOT AFPL Ghostscript, this is tested for.
 
 =head1 SEE ALSO
 
