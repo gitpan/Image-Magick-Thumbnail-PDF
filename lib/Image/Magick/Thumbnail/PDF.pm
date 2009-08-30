@@ -5,7 +5,7 @@ require Exporter;
 use File::Which;
 
 use vars qw{$VERSION @ISA @EXPORT_OK %EXPORT_TAGS};
-$VERSION = sprintf "%d.%02d", q$Revision: 1.11 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.12 $ =~ /(\d+)/g;
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(create_thumbnail);
@@ -172,7 +172,7 @@ Image::Magick::Thumbnail::PDF - make thumbnail of a page in a pdf document
 =head1 SYNOPSIS
 
 	use Image::Magick::Thumbnail::PDF 'create_thumbnail';
-
+   
 	my $out = create_thumbnail('/home/myself/mypdfile.pdf');
 	
 =head1 DESCRIPTION
@@ -193,7 +193,7 @@ No subroutines are exported by default.
 You must import as:
 
 	use Image::Magick::Thumbnail::PDF 'create_thumbnail';
-
+   
 	my $abs_thumb = create_thumbnail('/abs/path/to.pdf');
 	
 Or you can do this also:
@@ -422,9 +422,19 @@ L<Image::Magick::Thumbnail>
 
 Leo Charre leocharre at cpan dot org
 
+=head1 COPYRIGHT
+
+Copyright (c) 2009 Leo Charre. All rights reserved.
+
+=head1 LICENSE
+
+This package is free software; you can redistribute it and/or modify it under the same terms as Perl itself, i.e., under the terms of the "Artistic License" or the "GNU General Public License".
+
+=head1 DISCLAIMER
+
+This package is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+See the "GNU General Public License" for more details.
+   
 =cut
-
-
-
-
 
