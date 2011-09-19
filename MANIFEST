@@ -5,8 +5,6 @@ README
 lib/Image/Magick/Thumbnail/PDF.pm
 t/0.t
 t/1all.t
-t/2.t
-t/ap.pdf
 t/file1.pdf
 t/test/big.png
 t/test/bigger.png
